@@ -1,0 +1,4 @@
+<launch>
+   <node name="nm33_img_publisher" pkg="nm33" type="image_publisher.py" output="screen" respawn="true"/>
+
+</launch>
