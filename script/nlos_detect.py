@@ -19,6 +19,7 @@ def sky_segmantation(img):
     blur_img = cv2.blur(blur_img, (5,5)) 
     cont_img = modify_contrast_and_brightness2(blur_img)
     canny_img = cv2.Canny(cont_img, 10, 210)
+    # ret, bin_img = cv2.threshold(canny_img, 127, 255, cv2.THRESH_BINARY)
     show_img(canny_img)
 
 def modify_contrast_and_brightness2(img):
