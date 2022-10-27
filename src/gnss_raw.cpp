@@ -1,49 +1,35 @@
 #include "ros/ros.h"
 #include <gnss/tightly_coupled.hpp>
+#include <nm33/raw.h>
+#include <nm33/gnss_raw.h>
 
 using namespace std;
 
-// based on total satellites in constellation
-// vector<float> gps_raw[32];
-// vector<float> galileo_raw[30];
-// vector<float> beidou_raw[35];
+float vehicle_heading;
+bool rec_navsat = false; 
 
 vector<int> gps_svid(32);
 vector<int> gps_multi(32);
 vector<int> galileo_svid(30);
 vector<int> beidou_svid(35);
 
-float vehicle_heading;
-bool rec_navsat = false; 
-
 vector<gps_raw_t> gps;
 gps_raw_t sat_rxm;
 gps_raw_t sat_nav;
 
+nm33::raw raw;
+nm33::gnss_raw gps_raw;
+
 void getSatelliteRxmraw(const ublox_msgs::RxmRAWX& sat){
+
     if(rec_navsat){
         static int gps_num, galileo_num,  beidou_num;
-
-        // gps clear vector
-        // for(int i = 0;i < gps_num;i++){
-        //     for(int j = 0;j < 4;j++){
-        //         gps_raw[gps_svid[i]].pop_back();
-        //     } 
-        // }
-        // gps_svid.clear();
-        // beidou clear vector
-        // for(int i = 0;i < beidou_num;i++){
-        //     for(int j = 0;j < 4;j++){
-        //         beidou_raw[beidou_svid[i]].pop_back();
-        //     } 
-        // }
-        // beidou_svid.clear();
-
         int sat_num = sat.numMeas;
         int sat_type, index;
         gps_num = 0, galileo_num = 0, beidou_num = 0;
 
         gps_multi.clear();
+        gps_raw.meas.clear();
 
         cout << GREEN << "Update Ublox Rxmraw" << RESET << endl;
 
@@ -70,9 +56,23 @@ void getSatelliteRxmraw(const ublox_msgs::RxmRAWX& sat){
                             gps[index].cno = sat.meas[i].cno;
                             gps[index].prMes = sat.meas[i].prMes;
                             gps[index].prStdev = sat.meas[i].prStdev;
+
+                            // rostopic msg
+                            gps_raw.stamp = ros::Time::now();
+                            gps_raw.heading = vehicle_heading;
+                            raw.svId = gps[index].svId;
+                            raw.elev = gps[index].elev;
+                            raw.azim = gps[index].azim;
+                            raw.cno = gps[index].cno;
+                            raw.prMes = gps[index].prMes;
+                            raw.prStdev = gps[index].prStdev;
+
+                            gps_raw.meas.push_back(raw);
+
                         }
                     }
                     
+
                     cout << "gps number: " << gps_num << endl;
                     cout << "svId: " <<  gps[index].svId <<",elev: " <<  gps[index].elev <<",azim: " <<  gps[index].azim 
                     << ",cno: " <<  gps[index].cno << ",prMes: " <<  gps[index].prMes << ",prStdev: " <<  gps[index].prStdev << endl;
@@ -84,38 +84,19 @@ void getSatelliteRxmraw(const ublox_msgs::RxmRAWX& sat){
                     ;
                 case 3: // BeiDou
                 {
-                    // multipath exclution
-                    // vector<int>::iterator it = find(beidou_svid.begin(), beidou_svid.end(), sat.meas[i].svId);
-                    // if(it != beidou_svid.end() && beidou_num != 0){
-                    //     break;
-                    // }
-                    // else{
-                    //     beidou_svid.push_back(int(sat.meas[i].svId));
-                    //     beidou_raw[beidou_svid[beidou_num]].push_back(sat.meas[i].svId);       // sv id
-                    //     beidou_raw[beidou_svid[beidou_num]].push_back(sat.meas[i].cno);        // carrier to noise ratio
-                    //     beidou_raw[beidou_svid[beidou_num]].push_back(sat.meas[i].prMes);      // pseudorange measurement
-                    //     beidou_raw[beidou_svid[beidou_num]].push_back(sat.meas[i].prStdev);    // pseudorange std
-                    // }  
-                    
-                    // cout << "BDS: " << beidou_num << endl;
-                    // cout << "others: ";
-                    // for(int j = 0;j < beidou_raw[beidou_svid[beidou_num]].size();j++){
-                    //     cout << beidou_raw[beidou_svid[beidou_num]].at(j) << ", ";
-                    // }
-                    // cout << endl;
-                    // beidou_num++;
+                    ;
                 }
                     
-                case 5: // QZSS
-                    ;
-                case 6: // GLONASS
-                    ;
             }
         
         }
+        
         cout << "-----------------------------" << endl;
+
     }
-   
+    else{
+        cout << YELLOW << "Waiting for Ublox Navsat data to start localization..." << RESET << endl;
+    }
     return;
 }
 
@@ -172,23 +153,29 @@ void getSatelliteNavsat(const ublox_msgs::NavSAT& sat){
 
 void getSatelliteNavpvt(const ublox_msgs::NavPVT& sat){
     vehicle_heading = sat.heading * 0.00001;
-    // cout << "vehicle heading: " << vehicle_heading << endl;
+    cout << "vehicle heading: " << vehicle_heading << endl;
 }
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "GNSS");
     ros::NodeHandle n;
-    
+
+    ros::Publisher pub = n.advertise<nm33::gnss_raw>("/gps_raw", 1); 
+
     ros::Subscriber sub[3];
     sub[0] = n.subscribe("/ublox_f9p/rxmraw", 1, getSatelliteRxmraw);
     sub[1] = n.subscribe("/ublox_f9k/navsat", 1, getSatelliteNavsat);
     sub[2] = n.subscribe("/ublox_f9k/navpvt", 1, getSatelliteNavpvt);
 
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(1);
 
     while(ros::ok()){
+
+        pub.publish(gps_raw);
         ros::spinOnce();
+        loop_rate.sleep();
+
     }
     return 0;
 }
