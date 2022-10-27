@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(nm33)
+project(gnss_imu)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -8,10 +8,23 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   sensor_msgs
   ublox_msgs
+  message_generation
+)
+
+
+add_message_files(
+  FILES
+  raw.msg
+  gnss_raw.msg
+)
+
+generate_messages(
+ DEPENDENCIES
+ geometry_msgs
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp rospy std_msgs cv_bridge sensor_msgs ublox_msgs
+  CATKIN_DEPENDS roscpp rospy std_msgs cv_bridge sensor_msgs ublox_msgs message_runtime
 )
 
 include_directories(

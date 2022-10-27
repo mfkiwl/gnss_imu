@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>nm33</name>
+  <name>gnss_imu</name>
   <version>0.0.0</version>
   <description>The nm33 package</description>
   <maintainer email="n26104298@gs.ncku.edu.tw">Yi Cheng Chiu</maintainer>
@@ -26,4 +26,6 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>ublox_msgs</exec_depend>
 
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
 </package>
