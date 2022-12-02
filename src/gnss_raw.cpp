@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 #include <gnss/tightly_coupled.hpp>
-#include <nm33/raw.h>
-#include <nm33/gnss_raw.h>
+#include <gnss_imu/raw.h>
+#include <gnss_imu/gnss_raw.h>
 
 using namespace std;
 
@@ -17,8 +17,8 @@ vector<gps_raw_t> gps;
 gps_raw_t sat_rxm;
 gps_raw_t sat_nav;
 
-nm33::raw raw;
-nm33::gnss_raw gps_raw;
+gnss_imu::raw raw;
+gnss_imu::gnss_raw gps_raw;
 
 void getSatelliteRxmraw(const ublox_msgs::RxmRAWX& sat){
 
@@ -91,6 +91,7 @@ void getSatelliteRxmraw(const ublox_msgs::RxmRAWX& sat){
         
         }
         
+        gps_raw.numSvs = gps_num;
         cout << "-----------------------------" << endl;
 
     }
@@ -153,7 +154,7 @@ void getSatelliteNavsat(const ublox_msgs::NavSAT& sat){
 
 void getSatelliteNavpvt(const ublox_msgs::NavPVT& sat){
     vehicle_heading = sat.heading * 0.00001;
-    cout << "vehicle heading: " << vehicle_heading << endl;
+    // cout << "vehicle heading: " << vehicle_heading << endl;
 }
 
 int main(int argc, char **argv)
@@ -161,14 +162,14 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "GNSS");
     ros::NodeHandle n;
 
-    ros::Publisher pub = n.advertise<nm33::gnss_raw>("/gps_raw", 1); 
+    ros::Publisher pub = n.advertise<gnss_imu::gnss_raw>("/gps_raw", 1); 
 
     ros::Subscriber sub[3];
     sub[0] = n.subscribe("/ublox_f9p/rxmraw", 1, getSatelliteRxmraw);
     sub[1] = n.subscribe("/ublox_f9k/navsat", 1, getSatelliteNavsat);
     sub[2] = n.subscribe("/ublox_f9k/navpvt", 1, getSatelliteNavpvt);
 
-    ros::Rate loop_rate(1);
+    ros::Rate loop_rate(10);
 
     while(ros::ok()){
 
