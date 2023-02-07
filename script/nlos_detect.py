@@ -108,21 +108,9 @@ def calcutateSatelliteToImage(image_sub, satellite_sub):
         theta = 90 - int(gps[i][1])
         rpix = 2 * focal_length * math.tan(math.radians(theta / 2))
         
-        x_sat = img_width_center - rpix * math.cos(math.radians(vehicle_heading + int(gps[i][2]) + 90))
-        y_sat = img_height_center + rpix * math.sin(math.radians(vehicle_heading + int(gps[i][2]) + 90))
-        # x_sat = img_width_center + rpix * math.cos(math.radians(vehicle_heading + int(gps[i][2])))
-        # y_sat = img_height_center - rpix * math.sin(math.radians(vehicle_heading + int(gps[i][2])))
-
+        x_sat = img_width_center + rpix * math.sin(math.radians(vehicle_heading + int(gps[i][2])))
+        y_sat = img_height_center + rpix * math.cos(math.radians(vehicle_heading + int(gps[i][2])))
         print(int(gps[i][0]), theta, rpix, x_sat, y_sat)
-        
-        # if(x_sat >= img_width):
-        #     x_sat = img_width
-        # elif(x_sat <= 0):
-        #     x_sat = 0
-        # if(y_sat >= img_height):
-        #     y_sat = img_height
-        # elif(y_sat <= 0):
-        #     y_sat = 0
         
         sat2plot.append([int(gps[i][0]), int(x_sat), int(y_sat)])
         cv2.circle(cv_image, (int(x_sat), int(y_sat)), 10, (0, 0, 255), -1)
